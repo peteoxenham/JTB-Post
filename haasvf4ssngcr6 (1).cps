@@ -1811,7 +1811,7 @@ function onSection() {
     if (currentSection.getFirstCycle() == "gun-drilling" && properties.gunDrillAsBroach) {
       writeComment(localize("Broaching Cycle - Stopping Spindle"));
       writeBlock(mFormat.format(5));
-      writeBlock(mFormat.format(19));
+      writeBlock(mFormat.format(19), "P0.");
     } else {
       writeBlock(
         sOutput.format(spindleSpeed), mFormat.format(tool.clockwise ? 3 : 4)
