@@ -30,6 +30,8 @@ legal = "Copyright (C) 2012-2020 by Autodesk, Inc.";
 certificationLevel = 2;
 minimumRevision = 40783;
 
+thing = false;
+
 longDescription = "Generic post for the HAAS Next Generation control. The post includes support for multi-axis indexing and simultaneous machining. The post utilizes the dynamic work offset feature so you can place your work piece as desired without having to repost your NC programs." + EOL +
 "You can specify following pre-configured machines by using the property 'Machine model':" + EOL +
 "UMC-500" + EOL + "UMC-750" + EOL + "UMC-1000" + EOL + "UMC-1600-H";
@@ -92,7 +94,8 @@ properties = {
   useDWO: true, // Dynamic Work Offset (DWO), like CYCL 19
   useM130PartImages: false, // enable to include M130 pictures
   useM130ToolImages: false, // enable to include M130 pictures
-  coolantPressure: "" // coolant pump pressure
+  coolantPressure: "", // coolant pump pressure
+  gunDrillAsBroach: false
 };
 
 propertyDefinitions = {
@@ -191,7 +194,8 @@ propertyDefinitions = {
       {title:"Normal", id:"P1"},
       {title:"High", id:"P2"}
     ]
-  }
+  },
+  gunDrillAsBroach: {title:"Gun Drill as Broach", description:"Use gun drill cycle as broach, do not activate spindle at operation start", group: "Custom", type:"boolean"}
 };
 
 var singleLineCoolant = false; // specifies to output multiple coolant codes in one line rather than in separate lines
@@ -1806,9 +1810,15 @@ function onSection() {
       warning(localize("Spindle speed exceeds maximum value."));
     }
     skipBlock = !spindleChanged;
-    writeBlock(
-      sOutput.format(spindleSpeed), mFormat.format(tool.clockwise ? 3 : 4)
-    );
+    if (currentSection.getFirstCycle() == "gun-drilling" && properties.gunDrillAsBroach) {
+      writeComment(localize("Broaching Cycle - Stopping Spindle"));
+      writeBlock(mFormat.format(5));
+      writeBlock(mFormat.format(19));
+    } else {
+      writeBlock(
+        sOutput.format(spindleSpeed), mFormat.format(tool.clockwise ? 3 : 4)
+      );
+    }
   }
 
   previewImage();
@@ -2024,7 +2034,11 @@ function onDwell(seconds) {
 }
 
 function onSpindleSpeed(spindleSpeed) {
-  writeBlock(sOutput.format(spindleSpeed));
+  if (currentSection.getFirstCycle() == "gun-drilling" && properties.gunDrillAsBroach) {
+    writeBlock(sOutput.format(spindleSpeed), mFormat.format(tool.clockwise ? 3 : 4));
+  } else {
+    writeBlock(sOutput.format(spindleSpeed));
+  }
 }
 
 function onCycle() {
